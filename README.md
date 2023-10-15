@@ -51,10 +51,10 @@ python long_image.py "deep ocean life, deep sea photography, dark, jellyfish, bi
 was used to generate the following 512 x 2048 images:
 
 <p align="middle">
-  <img src="examples/ocean1.png" width=120 />
-  <img src="examples/ocean2.png" width=120 />
-  <img src="examples/ocean3.png" width=120 />
-  <img src="examples/ocean4.png" width=120 />
+  <img src="examples/ocean1.png" width=150 />
+  <img src="examples/ocean2.png" width=150 />
+  <img src="examples/ocean3.png" width=150 />
+  <img src="examples/ocean4.png" width=150 />
 </p>
 
 ### Tips
