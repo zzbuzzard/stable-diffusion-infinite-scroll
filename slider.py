@@ -13,6 +13,8 @@ class Slider:
         :param mode: 'H' for horizontal, 'V' for vertical. Diagonal movement not currently supported.
         """
         assert mode in ['H', 'V'], f"Mode must be either 'H' or 'V', but found '{mode}'."
+        if start_image is None:
+            start_image = np.zeros((base_size, base_size, 3))
         start_image = np.array(start_image)
         assert start_image.shape == (base_size, base_size, 3), \
             f"Start image shape was {start_image.shape}, expected {(base_size, base_size, 3)}"

@@ -1,40 +1,22 @@
 import torch
-from diffusers import StableDiffusionPipeline, StableDiffusionInpaintPipeline
-from PIL import Image, ImageTk
+from diffusers import StableDiffusionInpaintPipeline
+from PIL import Image
 import numpy as np
 import tkinter as tk
 import time
 from multiprocessing import Process, Queue
 import random
-import argparse  # TODO: Use
-import gc
+import argparse
 
 import util
 from util import next_image
 from slider import Slider
 
-parser = argparse.ArgumentParser()
-parser.add_argument("prompts", nargs="+", help="Prompt list to use for generation.")
-parser.add_argument("-s", "--steps", type=int, default=30, help="Number of steps to use for SD gen.")
+parser = util.get_argparser()
 parser.add_argument("-spd", "--speed", default=1., type=float,
                     help="Speed multiplier (between 0 and 1). A value of 1 causes images to be generated as fast as "
                          "possible. A value less than 1 leads to intentional breaks between generations to stop your "
                          "GPU exploding")
-parser.add_argument("-ii", "--init-image", nargs="?",
-                    help="Path to the init image. Will be scaled to the required resolution. If left blank, the init "
-                         "image is generated with SD.")
-parser.add_argument("-d", "--direction", default="H", choices=["H", "V"],
-                    help="Horizontal (H) or vertical (V) scroll mode.")
-parser.add_argument("-sh", "--shift", default=256, type=int,
-                    help="How much (in pixels) to shift an image before applying inpainting to fill the space.")
-# "runwayml/stable-diffusion-inpainting" is another good option
-# "stabilityai/stable-diffusion-2-inpainting"
-parser.add_argument("-m", "--model", default="runwayml/stable-diffusion-inpainting",
-                    help="Stable Diffusion model to use. Can specify a local path or a HuggingFace model.")
-# parser.add_argument("-mi", "--model-init", default="CompVis/stable-diffusion-v1-4",
-#                     help="Stable Diffusion model to use for the *init image* only.")
-parser.add_argument("-r", "--res", default=512, type=int,
-                    help="Resolution to run SD at. 512 recommended; higher values will likely be much slower.")
 
 
 def draw_loop(queue, shiftx, shifty):
@@ -57,12 +39,7 @@ def draw_loop(queue, shiftx, shifty):
         root.update()
 
 
-def change_speed(x):
-    slider.speed += x
-    print("Speed =", slider.speed)
-
-
-def update_loop(queue, start_image, prompts, numsteps, shiftx, shifty, model, base_size, speed_mul=1):
+def generate_loop(queue, start_image, prompts, pipe_args, shiftx, shifty, model, base_size, attn_slicing, speed_mul=1):
     """
     Repeatedly computes new images to display using SD, and adds them to the queue.
     If speed_mul < 1, we wait between generations to reduce GPU usage intensity.
@@ -76,17 +53,24 @@ def update_loop(queue, start_image, prompts, numsteps, shiftx, shifty, model, ba
     )
     pipe.safety_checker = None  # A single black image causes a lot of problems for this scroller
     pipe = pipe.to("cuda")
+    if attn_slicing:
+        pipe.enable_attention_slicing()
     print("Loaded.")
+
+    if start_image is None:
+        prompt = random.choice(prompts)
+        print(f"No init image provided: generating from prompt '{prompt}'")
+        start_image = util.generate_image_with_inpainting_pipeline(pipe, prompt, base_size, pipe_args)
 
     queue.put(0)  # draw_loops waits for this to signal it should begin
 
     front = start_image
     while True:
         prompt = random.choice(prompts)
-        print("Using prompt ' " + prompt + " '")
+        print(f"Using prompt '{prompt}'")
         start = time.time()
-        front = next_image(pipe, image=front, base_size=base_size, prompt=prompt, nsteps=numsteps,
-                           shiftx=shiftx, shifty=shifty)
+        front = next_image(pipe, image=front, base_size=base_size, prompt=prompt, shiftx=shiftx, shifty=shifty,
+                           pipe_args=pipe_args)
         duration = time.time() - start
         if speed_mul < 1:
             time.sleep(duration / speed_mul - duration)
@@ -96,37 +80,24 @@ def update_loop(queue, start_image, prompts, numsteps, shiftx, shifty, model, ba
 if __name__ == "__main__":
     args = parser.parse_args()
 
-    prompts = args.prompts
-    print("PROPTS:", prompts)
+    prompts = " ".join(args.prompts).split("|")
+    print(f"{len(prompts)} PROMPTS:\n", "\n  ".join(prompts))
 
-    if args.init_image is None:
-        prompt = random.choice(prompts)
-        print(f"No init image provided: generating from prompt '{prompt}'")
-        pipe = StableDiffusionInpaintPipeline.from_pretrained(
-            args.model,
-            revision="fp16",
-            torch_dtype=torch.float16,
-        )
-        pipe.safety_checker = None
-        pipe = pipe.to("cuda")
+    # Extra args for diffusers pipes
+    pipe_args = {
+        "num_inference_steps": args.steps,
+        "guidance_scale": args.guidance_scale,
+        "negative_prompt": " ".join(args.negative_prompt),
+        "height": args.res,
+        "width": args.res
+    }
 
-        start_image = util.generate_image_with_inpainting_pipeline(pipe, prompt, args.res, args.steps)
-        # start_image = (start_image / 255).cpu().numpy().astype(np.uint8)
-        # start_image = Image.fromarray(start_image)
-        del pipe
-        gc.collect()
-        torch.cuda.empty_cache()
-    else:
+    if args.init_image is not None:
         start_image = Image.open(args.init_image).convert("RGB")
         start_image = start_image.resize((args.res, args.res))
-
-    # path = input("Enter start image path: ")
-    # numsteps = int(input("How many steps? (10-50) "))
-    # speed_mul = float(input("Speed multiplier: (0-1) "))
+    else:
+        start_image = None
     speed_mul = max(min(args.speed, 1), 0.01)
-    # numprompts = int(input("How many prompts? "))
-    # prompts = [input(f"Prompt {i}: ") for i in range(1, numprompts + 1)]
-    # print("Ok... GPU time\n\n")
 
     # Load GUI window
     root = tk.Tk()
@@ -140,17 +111,6 @@ if __name__ == "__main__":
                        highlightthickness=0)
     canvas.pack()
 
-    ##    spdup = tk.Button(root,
-    ##                       text="spd up",
-    ##                       command = lambda:changespeed(1),
-    ##                       width = 10)
-    ##    spddown = tk.Button(root,
-    ##                       text="spd down",
-    ##                       command = lambda:changespeed(-1),
-    ##                       width = 10)
-    ##    canvas.create_window(20,30,window=spdup,anchor='sw')
-    ##    canvas.create_window(20,60,window=spddown,anchor='sw')
-
     if args.direction == "H":
         shiftx = args.shift
         shifty = 0
@@ -161,15 +121,13 @@ if __name__ == "__main__":
     slider = Slider(canvas, start_image, args.res, screen_width, screen_height, mode=args.direction)
 
     queue = Queue()
-    update_process = Process(target=update_loop,
-                             args=(queue, start_image, prompts, args.steps, shiftx, shifty, args.model, args.res, speed_mul))
+    update_process = Process(target=generate_loop,
+                             args=(queue, start_image, prompts, pipe_args, shiftx, shifty, args.model, args.res,
+                                   args.attn_slicing, speed_mul))
 
-    root.bind("<Escape>", lambda x: (root.destroy(), update_process.kill()))
+    root.bind("<Escape>", lambda x: (update_process.kill(), root.destroy()))
 
     print("Starting update thread...")
     update_process.start()
 
     draw_loop(queue, shiftx, shifty)
-
-    # res = long_image(image, prompt, num_shifts = 16, shiftx = 128, shifty = 0)
-    # res.save(f"images/longfantasy.png")
