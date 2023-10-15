@@ -16,15 +16,15 @@ There are two scripts in this project: `sd_scroll` (for the scrolling app) and `
 images using inpainting).
 ### Scroller
 ```
-sd_scroll.py [prompts] -s [number of steps] -d [H for horizontal or V for vertical]
+python sd_scroll.py [prompts] -s [number of steps] -d [H for horizontal or V for vertical]
 ```
 Will start the full-screen scroller app, which will extend the starting image forever (until stopped by pressing `Esc`).
 
 For example,
 ```
-sd_scroll.py fantasy mushroom forest|peaceful landscape -s 40 -d H
+python sd_scroll.py "fantasy mushroom forest|peaceful landscape" -s 40 -d H
 ```
-Note that prompts are separated by `|`.
+Note that prompts are separated by `|`, and surrounded by `"`.
 There are various other arguments (e.g. CFG, negative prompt, starting image), see `--help` for full details.
 
 You can also choose the Stable Diffusion model to be used via the `-m` flag. By default, HuggingFace's
@@ -34,13 +34,13 @@ any local model. I recommend using a specialised inpainting model.
 
 ### Long Image Generation
 ```
-long_image.py [prompts] -s [number of steps] -d [H for horizontal or V for vertical] -out [output path] -n [number of shifts]
+python long_image.py [prompts] -s [number of steps] -d [H for horizontal or V for vertical] -out [output path] -n [number of shifts]
 ```
 Most arguments are shared between the two scripts, see `--help` for full details.
 
 For example,
 ```
-long_image.py deep ocean life, deep sea photography, dark, jellyfish, bioluminescence, underwater, barren -s 40 -d V -cfg 12 -out test.png -n 6
+python long_image.py "deep ocean life, deep sea photography, dark, jellyfish, bioluminescence, underwater, barren" -s 40 -d V -cfg 12 -out test.png -n 6
 ```
 was used to generate the following 512 x 2048 images:
 
@@ -52,6 +52,8 @@ was used to generate the following 512 x 2048 images:
 </p>
 
 ### Tips
+ - A starting image can be provided. If not, it is generated using SD.
+   - Note that the app will show a black screen until the first images are generated, see the console for details.
  - If you run out of VRAM, try enabling the `-as` flag (attention slicing) or using a lower resolution (`-r` flag).
    - Everything was tested locally on a RTX 3060 Laptop GPU (6GB VRAM).
  - Reducing the number of steps (`-s`) can lead to really fast scrolling.
@@ -60,7 +62,7 @@ was used to generate the following 512 x 2048 images:
 
 ## Other examples
 ```
-sd_scroll.py 3D intricate structure, modern art sculpture, intricate, complementary colours, HD digital render -s 40 -d H -cfg 12 -r 640 -as
+python sd_scroll.py "3D intricate structure, modern art sculpture, intricate, complementary colours, HD digital render" -s 40 -d H -cfg 12 -r 640 -as
 ```
 I had to use `-as` for this one to reduce VRAM usage at the higher resolution of 640.
 <p align="center">
@@ -68,7 +70,7 @@ I had to use `-as` for this one to reduce VRAM usage at the higher resolution of
 </p>
 
 ```
-long_image.py beautiful rolling hills, peaceful landscape, blue sky, intricate detail, trees, sunrise -s 40 -d H -cfg 12 -out test.png -n 10
+python long_image.py "beautiful rolling hills, peaceful landscape, blue sky, intricate detail, trees, sunrise" -s 40 -d H -cfg 12 -out test.png -n 10
 ```
 <p align="center">
   <img src="examples/fields.png" />

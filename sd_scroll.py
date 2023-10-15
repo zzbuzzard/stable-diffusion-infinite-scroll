@@ -125,7 +125,7 @@ if __name__ == "__main__":
                              args=(queue, start_image, prompts, pipe_args, shiftx, shifty, args.model, args.res,
                                    args.attn_slicing, speed_mul))
 
-    root.bind("<Escape>", lambda x: (update_process.kill(), root.destroy()))
+    root.bind("<Escape>", lambda x: (root.destroy(), update_process.kill(), quit(0)))
 
     print("Starting update thread...")
     update_process.start()
