@@ -40,37 +40,43 @@ class Slider:
         self.img_np[-base_size:, -base_size:] = np.array(start_image)
 
         # Start 256 away from the end
-        self.xoffset = screen_width - self.display_width - base_size // 2
+        if self.mode == 'H':
+            self.offset = screen_width - self.display_width - base_size // 2
+        else:
+            self.offset = screen_height - self.display_height - base_size // 2
 
         self.img = Image.fromarray(self.img_np).resize((self.display_width, self.display_height),
                                                        Image.Resampling.LANCZOS)
         self.obj = ImageTk.PhotoImage(self.img)
-        self.id = canvas.create_image((self.xoffset, 0), image=self.obj)
+        self.id = canvas.create_image((self.offset if self.mode == 'H' else 0,
+                                       self.offset if self.mode == 'V' else 0), image=self.obj)
 
         self.speed = 0
 
     def move(self, deltatime):
-        self.xoffset -= deltatime * self.speed
+        self.offset -= deltatime * self.speed
 
-        if self.xoffset > 0:
-            print("Gap on left")
-            self.xoffset = 0
+        if self.offset > 0:
+            print("Gap on left / top")
+            self.offset = 0
             self.speed *= 1.25  # just until the next generation...
-        if self.xoffset < self.screen_width - self.display_width:
-            print("Gap on right")
-            self.xoffset = self.screen_width - self.display_width
+        bot = self.screen_width - self.display_width if self.mode == 'H' else self.screen_height - self.display_height
+        if self.offset < bot:
+            print("Gap on right / bottom")
+            self.offset = bot
             self.speed /= 1.25  # just until the next generation...
 
-        self.canvas.moveto(self.id, self.xoffset, 0)
+        self.canvas.moveto(self.id,
+                           self.offset if self.mode == 'H' else 0,
+                           self.offset if self.mode == 'V' else 0)
 
-    def update(self, newimage, shiftx, shifty, speed):
-        # TODO: Support shifty
-        newimage = np.array(newimage)
+    def update(self, new_img, shiftx, shifty, speed):
+        new_img = np.array(new_img)
         if self.mode == 'H':
-            self.img_np = np.concatenate((self.img_np[:, shiftx:], newimage[:, self.base_size - shiftx:]), axis=1)
+            self.img_np = np.concatenate((self.img_np[:, shiftx:], new_img[:, self.base_size - shiftx:]), axis=1)
             shift = shiftx
-        elif self.mode == 'V':
-            self.img_np = np.concatenate((self.img_np[shifty:], newimage[self.base_size - shifty:]), axis=0)
+        else:
+            self.img_np = np.concatenate((self.img_np[shifty:], new_img[self.base_size - shifty:]), axis=0)
             shift = shifty
 
         # Delete old object
@@ -81,13 +87,14 @@ class Slider:
             resize((self.display_width, self.display_height), Image.Resampling.LANCZOS)
         self.obj = ImageTk.PhotoImage(self.img)
 
-        self.xoffset += shiftx * self.display_multiplier
+        self.offset += shift * self.display_multiplier
 
-        self.id = self.canvas.create_image((self.xoffset, 0), image=self.obj)
+        self.id = self.canvas.create_image((self.offset if self.mode == 'H' else 0,
+                                            self.offset if self.mode == 'V' else 0), image=self.obj)
 
         # Set speed
         pix_per_sec = shift / max(0.1, speed)
-        display_pix_per_sec = pix_per_sec * self.screen_height / 512
+        display_pix_per_sec = pix_per_sec * self.display_multiplier
         ema_factor = 0.8  # higher = adapts faster to changes in speed (but less smooth)
         if self.speed == 0:  # first run
             self.speed = display_pix_per_sec

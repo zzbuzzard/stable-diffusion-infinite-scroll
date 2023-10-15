@@ -74,7 +74,8 @@ def update_loop(queue, start_image, prompts, numsteps, shiftx, shifty, speed_mul
         prompt = random.choice(prompts)
         print("Using prompt ' " + prompt + " '")
         start = time.time()
-        front = next_image(pipe, front, prompt, numsteps, shiftx, shifty)
+        front = next_image(pipe, image=front, base_size=base_size, prompt=prompt, nsteps=numsteps,
+                           shiftx=shiftx, shifty=shifty)
         duration = time.time() - start
         if speed_mul < 1:
             time.sleep(duration / speed_mul - duration)
@@ -118,7 +119,8 @@ if __name__ == "__main__":
     slider = Slider(canvas, start_image, base_size, screen_width, screen_height, mode='H')
 
     queue = Queue()
-    update_process = Process(target=update_loop, args=(queue, start_image, prompts, numsteps, _shiftx, _shifty, speed_mul))
+    update_process = Process(target=update_loop,
+                             args=(queue, start_image, prompts, numsteps, _shiftx, _shifty, speed_mul))
     print("Starting update thread...")
     update_process.start()
 
@@ -126,7 +128,3 @@ if __name__ == "__main__":
 
     # res = long_image(image, prompt, num_shifts = 16, shiftx = 128, shifty = 0)
     # res.save(f"images/longfantasy.png")
-
-
-
-
