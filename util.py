@@ -54,7 +54,8 @@ def get_argparser():
     parser.add_argument("prompts", nargs="+", help="Prompt list to use for generation. Separate prompts using "
                                                    "the '|' character.")
     parser.add_argument("-np", "--negative-prompt", nargs="?",
-                        default="split image, two images, watermark, text", help="Negative prompt (optional)")
+                        default="split image, two images, watermark, text", help="Negative prompt (optional). Defaults "
+                                "to \"split image, two images, watermark, text\".")
     parser.add_argument("-cfg", "--guidance_scale", type=float, default=7.5, help="Context-free guidance")
     parser.add_argument("-s", "--steps", type=int, default=30, help="Number of steps to use for SD gen.")
     parser.add_argument("-as", "--attn-slicing", action='store_true',
@@ -65,9 +66,10 @@ def get_argparser():
                         help="Path to the init image. Will be scaled to the required resolution. If left blank, "
                              "the init image is generated with SD.")
     parser.add_argument("-d", "--direction", default="H", choices=["H", "V"],
-                        help="Horizontal (H) or vertical (V) scroll mode.")
+                        help="Horizontal (H) or vertical (V) scroll mode. Default H.")
     parser.add_argument("-sh", "--shift", default=256, type=int,
-                        help="How much (in pixels) to shift an image before applying inpainting to fill the space.")
+                        help="How much (in pixels) to shift an image before applying inpainting to fill the space. "
+                             "Default 256.")
     # "stabilityai/stable-diffusion-2-inpainting" is another option
     parser.add_argument("-m", "--model", default="runwayml/stable-diffusion-inpainting",
                         help="Stable Diffusion model to use. Can specify a local path or a HuggingFace model.")
