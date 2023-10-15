@@ -14,7 +14,7 @@ The image is continuously extended using inpainting.
 ## Usage
 First, pull:
 ```
-git clone git@github.com:zzbuzzard/stable-diffusion-infinite-scroll.git
+git clone https://github.com/zzbuzzard/stable-diffusion-infinite-scroll.git
 ```
 and install the dependencies (probably in a virtual environment).
 
