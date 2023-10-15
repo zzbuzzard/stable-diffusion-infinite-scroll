@@ -12,6 +12,12 @@ The image is continuously extended using inpainting.
  - `requirements.txt` for Python requirements.
 
 ## Usage
+First, pull:
+```
+git clone git@github.com:zzbuzzard/stable-diffusion-infinite-scroll.git
+```
+and install the dependencies (probably in a virtual environment).
+
 There are two scripts in this project: `sd_scroll` (for the scrolling app) and `long_image` (to generate very wide/high
 images using inpainting).
 ### Scroller
