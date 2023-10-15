@@ -8,6 +8,7 @@ from multiprocessing import Process, Queue
 import random
 import argparse  # TODO: Use
 
+from util import next_image
 from slider import Slider
 
 # TODO:
@@ -22,6 +23,7 @@ from slider import Slider
 _shiftx = 256
 _shifty = 0
 sd_model = "runwayml/stable-diffusion-inpainting"
+base_size = 512
 
 
 def draw_loop(queue, shiftx, shifty):
@@ -112,8 +114,8 @@ if __name__ == "__main__":
     ##    canvas.create_window(20,60,window=spddown,anchor='sw')
 
     start_image = Image.open(path).convert("RGB")
-    start_image = start_image.resize((512, 512))
-    slider = Slider(canvas, start_image, screen_width, screen_height)
+    start_image = start_image.resize((base_size, base_size))
+    slider = Slider(canvas, start_image, base_size, screen_width, screen_height, mode='H')
 
     queue = Queue()
     update_process = Process(target=update_loop, args=(queue, start_image, prompts, numsteps, _shiftx, _shifty, speed_mul))
