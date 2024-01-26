@@ -3,3 +3,4 @@ numpy>=1.25.2
 argparse>=1.4.0
 diffusers>=0.14.0
 Pillow
+safetensors
