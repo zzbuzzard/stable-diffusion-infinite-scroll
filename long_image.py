@@ -32,15 +32,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     print("Loading SD...")
-    pipe = StableDiffusionInpaintPipeline.from_pretrained(
-        args.model,
-        revision="fp16",
-        torch_dtype=torch.float16,
-    )
-    pipe.safety_checker = None  # A single black image causes a lot of problems for this scroller
-    pipe = pipe.to("cuda")
-    if args.attn_slicing:
-        pipe.enable_attention_slicing()
+    pipe = util.get_pipe(args.model, args.attn_slicing, args.legacy)
     print("Loaded.")
 
     prompts = " ".join(args.prompts).split("|")

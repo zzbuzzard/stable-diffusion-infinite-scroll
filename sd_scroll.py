@@ -39,22 +39,15 @@ def draw_loop(queue, shiftx, shifty):
         root.update()
 
 
-def generate_loop(queue, start_image, prompts, pipe_args, shiftx, shifty, model, base_size, attn_slicing, speed_mul=1):
+def generate_loop(queue, start_image, prompts, pipe_args, shiftx, shifty, model, base_size, attn_slicing, legacy,
+                  speed_mul=1):
     """
     Repeatedly computes new images to display using SD, and adds them to the queue.
     If speed_mul < 1, we wait between generations to reduce GPU usage intensity.
     """
     assert 0 < speed_mul <= 1
     print("Loading SD...")
-    pipe = StableDiffusionInpaintPipeline.from_pretrained(
-        model,
-        revision="fp16",
-        torch_dtype=torch.float16,
-    )
-    pipe.safety_checker = None  # A single black image causes a lot of problems for this scroller
-    pipe = pipe.to("cuda")
-    if attn_slicing:
-        pipe.enable_attention_slicing()
+    pipe = util.get_pipe(model, attn_slicing, legacy)
     print("Loaded.")
 
     if start_image is None:
@@ -88,8 +81,9 @@ if __name__ == "__main__":
         "num_inference_steps": args.steps,
         "guidance_scale": args.guidance_scale,
         "negative_prompt": " ".join(args.negative_prompt),
-        "height": args.res,
-        "width": args.res
+        "strength": 1,
+        # "height": args.res,
+        # "width": args.res
     }
 
     if args.init_image is not None:
@@ -123,7 +117,7 @@ if __name__ == "__main__":
     queue = Queue()
     update_process = Process(target=generate_loop,
                              args=(queue, start_image, prompts, pipe_args, shiftx, shifty, args.model, args.res,
-                                   args.attn_slicing, speed_mul))
+                                   args.attn_slicing, args.legacy, speed_mul))
 
     root.bind("<Escape>", lambda x: (root.destroy(), update_process.kill(), quit(0)))
 

@@ -1,7 +1,10 @@
+import diffusers
 import numpy as np
 from PIL import Image
 import torch
 import argparse
+
+from diffusers import StableDiffusionInpaintPipeline, StableDiffusionInpaintPipelineLegacy
 
 
 def generate_image(pipe, prompt, base_size, nsteps):
@@ -54,8 +57,8 @@ def get_argparser():
     parser.add_argument("prompts", nargs="+", help="Prompt list to use for generation. Separate prompts using "
                                                    "the '|' character.")
     parser.add_argument("-np", "--negative-prompt", nargs="?",
-                        default="split image, two images, watermark, text", help="Negative prompt (optional). Defaults "
-                                "to \"split image, two images, watermark, text\".")
+                        default=["split image", "two images", "watermark", "text"], help="Negative prompt (optional)."
+                                "Defaults to \"split image, two images, watermark, text\".")
     parser.add_argument("-cfg", "--guidance_scale", type=float, default=7.5, help="Context-free guidance")
     parser.add_argument("-s", "--steps", type=int, default=30, help="Number of steps to use for SD gen.")
     parser.add_argument("-as", "--attn-slicing", action='store_true',
@@ -76,4 +79,33 @@ def get_argparser():
     parser.add_argument("-r", "--res", default=512, type=int,
                         help="Resolution to run SD at. 512 recommended. Consider also modifying 'shift' if you modify "
                              "this. If larger values cause your GPU VRAM to max out, try using attention slicing (-as).")
+    parser.add_argument("--legacy", action='store_true',
+                        help="Uses StableDiffusionInpaintingPipelineLegacy rather than "
+                             "StableDiffusionInpaintingPipeline. This is useful for running non-inpainting or old "
+                             "models.")
     return parser
+
+
+def get_pipe(name, attn_slicing: bool, legacy: bool):
+    loader = StableDiffusionInpaintPipelineLegacy if legacy else StableDiffusionInpaintPipeline
+    if name.endswith(".safetensors"):
+        pipe = loader.from_single_file(
+            name,
+            revision="fp16",
+            torch_dtype=torch.float16,
+            load_safety_checker=False
+        )
+    else:
+        pipe = loader.from_pretrained(
+            name,
+            revision="fp16",
+            torch_dtype=torch.float16,
+            load_safety_checker=False
+        )
+    pipe.safety_checker = None  # A single black image causes a lot of problems for this scroller
+    pipe = pipe.to("cuda")
+    if attn_slicing:
+        pipe.enable_attention_slicing()
+
+    return pipe
+
