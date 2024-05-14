@@ -29,7 +29,7 @@ def generate_image_with_inpainting_pipeline(pipe, prompt, base_size, pipe_args):
 
 def next_image(pipe, image, base_size, prompt, shiftx, shifty, pipe_args):
     """Given an image, uses inpainting to produce the next image (which overlaps with the previous image)"""
-    assert image.size == (base_size, base_size)
+    assert image.size == (base_size, base_size), f"Expected image of size {(base_size, base_size)} but pipeline output has shape {image.size}."
 
     image_n = np.array(image)
     image_n = np.concatenate((image_n[:, shiftx:],

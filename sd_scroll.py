@@ -82,8 +82,8 @@ if __name__ == "__main__":
         "guidance_scale": args.guidance_scale,
         "negative_prompt": " ".join(args.negative_prompt),
         "strength": 1,
-        # "height": args.res,
-        # "width": args.res
+        "height": args.res,
+        "width": args.res
     }
 
     if args.init_image is not None:
