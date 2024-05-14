@@ -32,7 +32,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     print("Loading SD...")
-    pipe = util.get_pipe(args.model, args.attn_slicing, args.legacy)
+    pipe = util.get_pipe(args.model, args.attn_slicing, args.legacy, xl=args.xl)
     print("Loaded.")
 
     prompts = " ".join(args.prompts).split("|")

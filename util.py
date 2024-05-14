@@ -4,7 +4,7 @@ from PIL import Image
 import torch
 import argparse
 
-from diffusers import StableDiffusionInpaintPipeline, StableDiffusionInpaintPipelineLegacy
+from diffusers import StableDiffusionInpaintPipeline, StableDiffusionInpaintPipelineLegacy, StableDiffusionXLInpaintPipeline
 
 
 def generate_image(pipe, prompt, base_size, nsteps):
@@ -77,17 +77,26 @@ def get_argparser():
     parser.add_argument("-m", "--model", default="runwayml/stable-diffusion-inpainting",
                         help="Stable Diffusion model to use. Can specify a local path or a HuggingFace model.")
     parser.add_argument("-r", "--res", default=512, type=int,
-                        help="Resolution to run SD at. 512 recommended. Consider also modifying 'shift' if you modify "
-                             "this. If larger values cause your GPU VRAM to max out, try using attention slicing (-as).")
+                        help="Resolution to run SD at. 512 recommended (768 for XL). Consider also modifying 'shift' "
+                             "if you modify this. If larger values cause your GPU VRAM to max out, try using "
+                             "attention slicing (-as).")
     parser.add_argument("--legacy", action='store_true',
                         help="Uses StableDiffusionInpaintingPipelineLegacy rather than "
                              "StableDiffusionInpaintingPipeline. This is useful for running non-inpainting or old "
                              "models.")
+    parser.add_argument("--xl", action='store_true', help="XL model support. Note: only inpainting XL "
+                                                          "models are supported.")
     return parser
 
 
-def get_pipe(name, attn_slicing: bool, legacy: bool):
-    loader = StableDiffusionInpaintPipelineLegacy if legacy else StableDiffusionInpaintPipeline
+def get_pipe(name, attn_slicing: bool, legacy: bool, xl: bool = False):
+    if xl:
+        loader = StableDiffusionXLInpaintPipeline
+    elif legacy:
+        loader = StableDiffusionInpaintPipelineLegacy
+    else:
+        loader = StableDiffusionInpaintPipeline
+
     if name.endswith(".safetensors"):
         pipe = loader.from_single_file(
             name,

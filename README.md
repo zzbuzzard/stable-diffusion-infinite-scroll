@@ -66,6 +66,7 @@ was used to generate the following 512 x 2048 images:
  - If you want to leave the scroller on for a long time, try using `-spd` with a value less than 1; this will cause the scroller to move slower but give the GPU regular breaks to prevent excessive heat.
  - Vertical and horizontal scrolling are supported (`-d H` or `-d V`).
  - Alternative models (including local models) can be specified with `-m`, but please be aware that this method works very poorly with non-inpainting models. If you get errors with local models, try passing `--legacy`.
+   - XL models are supported: pass `--xl` at the command line as well as `-m [YOUR_MODEL]`.
 
 ## Other examples
 ```
