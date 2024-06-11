@@ -5,7 +5,14 @@ import torch
 import argparse
 
 from diffusers import StableDiffusionInpaintPipeline, StableDiffusionInpaintPipelineLegacy, StableDiffusionXLInpaintPipeline
+from diffusers.schedulers import DDIMScheduler, DPMSolverMultistepScheduler, EulerAncestralDiscreteScheduler, PNDMScheduler
 
+schedulers = {
+    "DDIM": DDIMScheduler,
+    "DPM++": DPMSolverMultistepScheduler,
+    "EULERA": EulerAncestralDiscreteScheduler,
+    "PNDM": PNDMScheduler
+}
 
 def generate_image(pipe, prompt, base_size, nsteps):
     return pipe(prompt=prompt, num_inference_steps=nsteps, height=base_size, width=base_size).images[0]
@@ -76,6 +83,7 @@ def get_argparser():
     # "stabilityai/stable-diffusion-2-inpainting" is another option
     parser.add_argument("-m", "--model", default="runwayml/stable-diffusion-inpainting",
                         help="Stable Diffusion model to use. Can specify a local path or a HuggingFace model.")
+    parser.add_argument("-sc", "--scheduler", default="DPM++", help=f"Scheduler. Options are {', '.join(schedulers.keys())}.")
     parser.add_argument("-r", "--res", default=512, type=int,
                         help="Resolution to run SD at. 512 recommended (768 for XL). Consider also modifying 'shift' "
                              "if you modify this. If larger values cause your GPU VRAM to max out, try using "
@@ -89,7 +97,9 @@ def get_argparser():
     return parser
 
 
-def get_pipe(name, attn_slicing: bool, legacy: bool, xl: bool = False):
+def get_pipe(name, scheduler_name: str, attn_slicing: bool, legacy: bool, xl: bool = False):
+    assert scheduler_name.upper() in schedulers, f"Scheduler '{scheduler_name}' not found. Options are {', '.join(schedulers.keys())}."
+
     if xl:
         loader = StableDiffusionXLInpaintPipeline
     elif legacy:
@@ -112,6 +122,11 @@ def get_pipe(name, attn_slicing: bool, legacy: bool, xl: bool = False):
             load_safety_checker=False
         )
     pipe.safety_checker = None  # A single black image causes a lot of problems for this scroller
+
+    sclass = schedulers[scheduler_name.upper()]
+    pipe.scheduler = sclass.from_config(pipe.scheduler.config)
+    print("Scheduler:", pipe.scheduler)
+
     pipe = pipe.to("cuda")
     if attn_slicing:
         pipe.enable_attention_slicing()

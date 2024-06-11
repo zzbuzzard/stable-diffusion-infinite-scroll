@@ -39,15 +39,15 @@ def draw_loop(queue, shiftx, shifty):
         root.update()
 
 
-def generate_loop(queue, start_image, prompts, pipe_args, shiftx, shifty, model, base_size, attn_slicing, legacy,
-                  speed_mul=1, xl=False):
+def generate_loop(queue, args, start_image, prompts, pipe_args, shiftx, shifty, speed_mul=1):
     """
     Repeatedly computes new images to display using SD, and adds them to the queue.
     If speed_mul < 1, we wait between generations to reduce GPU usage intensity.
     """
     assert 0 < speed_mul <= 1
+    base_size = args.res
     print("Loading SD...")
-    pipe = util.get_pipe(model, attn_slicing, legacy, xl=xl)
+    pipe = util.get_pipe(args.model, args.scheduler, args.attn_slicing, args.legacy, xl=args.xl)
     print("Loaded.")
 
     if start_image is None:
@@ -116,8 +116,7 @@ if __name__ == "__main__":
 
     queue = Queue()
     update_process = Process(target=generate_loop,
-                             args=(queue, start_image, prompts, pipe_args, shiftx, shifty, args.model, args.res,
-                                   args.attn_slicing, args.legacy, speed_mul, args.xl))
+                             args=(queue, args, start_image, prompts, pipe_args, shiftx, shifty, speed_mul))
 
     root.bind("<Escape>", lambda x: (root.destroy(), update_process.kill(), quit(0)))
 
